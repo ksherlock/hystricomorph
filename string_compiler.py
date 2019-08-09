@@ -141,7 +141,8 @@ def generate_asm(asm, d, level):
 	if short_m:
 		asm.emit("longa on", 0)
 	if "" in d: 
-		asm.emit("ldx #{}".format(d[""]), 3)
+		d = d[""]
+		asm.emit("ldx #{}\t; '{}'".format(d["__value__"], d["__key__"]), 3)
 	asm.rts()
 
 
@@ -161,7 +162,7 @@ def process(data, name):
 			current[x] = tmp
 			current = tmp
 
-		current[""] = data[k]
+		current[""] = { "__value__": data[k], "__key__": k }
 
 	# print(tree);
 	asm = Assembler(name)
@@ -190,10 +191,8 @@ def read_data(f, name):
 			err = "{}:{}: Bad data: {}".format(name,ln,line)
 			raise Exception(err)
 		k = m[1]
-		# if flag_ci: k = k.lower()
 		if flag_ci:
 			k = k.lower()
-			# k = "".join([chr(ord(x)|0x20) for x in k])
 
 		v = int(m[2])
 
