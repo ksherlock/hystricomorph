@@ -8,56 +8,6 @@ from asm import Assembler
 flag_ci = False
 
 
-def printf(fmt, *args):	print(fmt % args)
-
-def c_encode(c):
-	if c in '\\\'': return '\\'+c
-	return c
-
-def str_encode(s):
-	return "".join(reversed([c_encode(x) for x in s]))
-
-def str_xx(s):
-	return "".join(reversed(["%02x" % (ord(x)) for x in s]))
-
-def generate_c(d, level, preserve):
-
-	indent = "  " * level
-
-	double = [x for x in d.keys() if len(x) == 2]
-	single = [x for x in d.keys() if len(x) == 1]
-
-	count = len(d)
-	if "" in d: count = count - 1
-	if count>0:
-		# if preserve: printf("%s  unsigned c;", indent)
-		if double: printf("%s  c = *(unsigned *)(cp+%d);", indent, level*2)
-		else: printf("%s  c = *(unsigned char *)(cp+%d);", indent, level*2)
-
-		if flag_ci:
-			if double: printf("%s  c |= 0x2020;", indent)
-			else: printf("%s  c |= 0x20;", indent)
-
-
-	for k in double:
-		dd = d[k]
-		printf("%s  if (c=='%s'){", indent, str_encode(k))
-		generate_c(dd, level+1, count>1)
-		printf("%s  }", indent)
-
-	if single: printf("%s  c &= 0xff;", indent)
-	for k in single:
-		dd = d[k]
-		printf("%s  if (c=='%s'){", indent, str_encode(k))
-		generate_c(dd, level+1, count>1)
-		printf("%s  }", indent)
-
-
-
-	rv = 0
-	if "" in d: rv = d[""]
-	printf("%s  return %d", indent, rv)
-
 
 def str_to_int(cc):
 	fn = lambda x, y: (x << 8) + ord(y)
