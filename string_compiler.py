@@ -67,7 +67,8 @@ def generate_asm(asm, d, level):
 	for k in double:
 		dd = d[k]
 		l = asm.reserve_label()
-		mask = load_char(asm, False, level, short_m, mask, or_mask(k))
+		if flag_ci:
+			mask = load_char(asm, False, level, short_m, mask, or_mask(k))
 		asm.emit("cmp #${:04x}\t; '{}'".format(str_to_int(k), str_to_print(k)), 3)
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
@@ -82,7 +83,8 @@ def generate_asm(asm, d, level):
 	for k in single:
 		dd = d[k]
 		l = asm.reserve_label()
-		mask = load_char(asm, False, level, short_m, mask, or_mask(k))
+		if flag_ci:
+			mask = load_char(asm, False, level, short_m, mask, or_mask(k))
 		asm.emit("cmp #${:02x}\t; '{}'".format(str_to_int(k), str_to_print(k)), 2)
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
