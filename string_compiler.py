@@ -6,6 +6,9 @@ from functools import reduce
 from asm import Assembler
 
 flag_i = False
+flag_l = False
+flag_v = False
+flag_o = None
 
 
 def str_to_int(cc):
@@ -78,8 +81,6 @@ def generate_asm(asm, d, level):
 		l = asm.reserve_label()
 		if flag_i: mask = mask_char(asm, short_m, mask, or_mask(k))
 		v = str_to_int(k)
-		# only valid if preceeded by a lda/ora
-		# if v != 0:
 		asm.emit("cmp #${:04x}\t; '{}'".format(v, encode_string(k)), 3)
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
@@ -96,7 +97,6 @@ def generate_asm(asm, d, level):
 		l = asm.reserve_label()
 		if flag_i: mask = mask_char(asm, short_m, mask, or_mask(k))
 		v = str_to_int(k)
-		# if v != 0:
 		asm.emit("cmp #${:02x}\t; '{}'".format(v, encode_string(k)), 2)
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
@@ -150,7 +150,7 @@ def usage(ex=1):
 
 
 def read_data(f, name):
-	global flag_i
+	global flag_i, flag_l
 
 	data = {}
 	ln = 0
@@ -169,6 +169,11 @@ def read_data(f, name):
 			k = k.lower()
 		k = decode_string(k)
 		v = int(m[2])
+		if flag_l:
+			if v > 255 or len(orig_k) > 255:
+				err = "{}:{} Value too large: {}".format(name, ln, v)
+				raise Exception(err)
+			v = (v << 8) + len(orig_k) 
 
 		if k in data:
 			err = "{}:{}: Duplicate string: {}".format(name,ln,orig_k)
@@ -186,9 +191,8 @@ def read_file(path):
 		return read_data(f, path)
 
 
+def init_maps():
 
-def main():
-	global flag_i
 	global decode_map
 	global encode_map
 
@@ -223,10 +227,26 @@ def main():
 
 
 
+def main():
+	global flag_i, flag_l
+
+	init_maps()
+
+
 	argv = sys.argv[1:]
-	opts, args = getopt.getopt(argv, "i")
+	opts, args = getopt.getopt(argv, "ivo:le")
+
+	# flags = {}
+	# for k, v in opts: flags[k] = v
+	# # booleans
+	# for k in ("-i","-v","-l","-e"):
+	# 	flags[k] = k in flags
+
 	for k, v in opts:
 		if k == '-i': flag_i = True
+		elif k == '-o': flag_o = v
+		elif k == '-v': flag_v = True
+		elif k == '-l': flag_l = True
 		else:
 			usage()
 
