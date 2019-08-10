@@ -1,4 +1,5 @@
 from textwrap import indent, dedent
+from time import asctime
 
 class Block(object):
 	def __init__(self):
@@ -146,7 +147,8 @@ class Assembler(object):
 		self.new_block()
 
 	def header(self, io):
-		io.write("\tcase on\n");
+		io.write("* generated " + asctime() + "\n\n")
+		io.write("\tcase on\n\n");
 		io.write("dummy\tSTART\n\tEND\n\n")
 		io.write(self.name + "\tSTART\n\n")
 		io.write("cp\tequ 5\n")
