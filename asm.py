@@ -70,12 +70,11 @@ class Assembler(object):
 			if len(ll)>0:
 				first = ll[0]
 				for l in ll: map[l] = first
+				b.labels = [first]
 
 		for b in self.blocks:
 			if b.bne:
 				b.bne = map[b.bne]
-			if len(b.labels)>1:
-				b.labels = b.labels[0:1]
 
 	def reify_branches(self):
 		# in practice all branches are forward
@@ -147,7 +146,8 @@ class Assembler(object):
 		self.new_block()
 
 	def header(self, io):
-		io.write("\t case on\n");
+		io.write("\tcase on\n");
+		io.write("dummy\tSTART\n\tEND\n\n")
 		io.write(self.name + "\tSTART\n\n")
 		io.write("cp\tequ 5\n")
 
