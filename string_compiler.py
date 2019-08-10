@@ -77,7 +77,9 @@ def generate_asm(asm, d, level):
 		dd = d[k]
 		l = asm.reserve_label()
 		if flag_i: mask = mask_char(asm, short_m, mask, or_mask(k))
-		asm.emit("cmp #${:04x}\t; '{}'".format(str_to_int(k), str_to_print(k)), 3)
+		v = str_to_int(k)
+		if v != 0:
+			asm.emit("cmp #${:04x}\t; '{}'".format(v, str_to_print(k)), 3)
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
 		asm.emit_label(l)
@@ -92,7 +94,9 @@ def generate_asm(asm, d, level):
 		dd = d[k]
 		l = asm.reserve_label()
 		if flag_i: mask = mask_char(asm, short_m, mask, or_mask(k))
-		asm.emit("cmp #${:02x}\t; '{}'".format(str_to_int(k), str_to_print(k)), 2)
+		v = str_to_int(k)
+		if v != 0:
+			asm.emit("cmp #${:02x}\t; '{}'".format(v, str_to_print(k)), 2)
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
 		asm.emit_label(l)
