@@ -5,8 +5,7 @@ from functools import reduce
 
 from asm import Assembler
 
-flag_ci = False
-
+flag_i = False
 
 
 def str_to_int(cc):
@@ -33,7 +32,7 @@ def mask_char(asm, short_m, old, new):
 
 
 def generate_asm(asm, d, level):
-	global flag_ci
+	global flag_i
 
 	double = [x for x in d.keys() if len(x) == 2]
 	single = [x for x in d.keys() if len(x) == 1]
@@ -41,7 +40,7 @@ def generate_asm(asm, d, level):
 
 	mask = 0
 	tay = False
-	if flag_ci:
+	if flag_i:
 		single.sort(key = or_mask)
 		double.sort(key = or_mask)
 		if len(single): mask = or_mask(single[0])
@@ -72,12 +71,12 @@ def generate_asm(asm, d, level):
 
 		if tay: asm.emit("tay", 1)
 
-		if flag_ci: mask = mask_char(asm, short_m, 0, mask)
+		if flag_i: mask = mask_char(asm, short_m, 0, mask)
 
 	for k in double:
 		dd = d[k]
 		l = asm.reserve_label()
-		if flag_ci: mask = mask_char(asm, short_m, mask, or_mask(k))
+		if flag_i: mask = mask_char(asm, short_m, mask, or_mask(k))
 		asm.emit("cmp #${:04x}\t; '{}'".format(str_to_int(k), str_to_print(k)), 3)
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
@@ -92,7 +91,7 @@ def generate_asm(asm, d, level):
 	for k in single:
 		dd = d[k]
 		l = asm.reserve_label()
-		if flag_ci: mask = mask_char(asm, short_m, mask, or_mask(k))
+		if flag_i: mask = mask_char(asm, short_m, mask, or_mask(k))
 		asm.emit("cmp #${:02x}\t; '{}'".format(str_to_int(k), str_to_print(k)), 2)
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
@@ -136,7 +135,7 @@ def usage(ex=1):
 
 
 def read_data(f, name):
-	global flag_ci
+	global flag_i
 
 	data = {}
 	ln = 0
@@ -151,7 +150,7 @@ def read_data(f, name):
 			err = "{}:{}: Bad data: {}".format(name,ln,line)
 			raise Exception(err)
 		k = m[1]
-		if flag_ci:
+		if flag_i:
 			k = k.lower()
 
 		v = int(m[2])
@@ -174,12 +173,12 @@ def read_file(path):
 
 
 def main():
-	global flag_ci
+	global flag_i
 
 	argv = sys.argv[1:]
 	opts, args = getopt.getopt(argv, "i")
 	for k, v in opts:
-		if k == "-i": flag_ci = True
+		if k == '-i': flag_i = True
 		else:
 			usage()
 
@@ -197,4 +196,9 @@ def main():
 	process(data, name)
 
 	sys.exit(0)
-main()
+
+try:
+	main()
+except Exception as ex:
+	print("string16: ", ex, file=sys.stderr, flush=True)
+	sys.exit(1)
