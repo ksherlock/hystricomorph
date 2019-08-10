@@ -20,17 +20,12 @@ def or_mask(cc):
 	fn = lambda x, y: (x << 8) + (0x20 * y.islower())
 	return reduce(fn, reversed(cc), 0)
 
-def load_char(asm, dirty, level, short_m, old, new):
-
-	if old & ~new: dirty = True
-	if dirty:
-		if level == 0:
-			asm.emit("lda (cp)", 2)
-		else:
-			asm.emit("lda (cp),y", 2)
-		old = 0
+def mask_char(asm, short_m, old, new):
 
 	if old == new: return new
+
+	if old & ~new: 
+		asm.emit("tya", 1)
 
 	if short_m: asm.emit("ora #${:02x}".format(new), 2)
 	else: asm.emit("ora #${:04x}".format(new), 3)
@@ -45,11 +40,20 @@ def generate_asm(asm, d, level):
 	short_m = single and not double
 
 	mask = 0
+	tay = False
 	if flag_ci:
 		single.sort(key = or_mask)
 		double.sort(key = or_mask)
 		if len(single): mask = or_mask(single[0])
 		if len(double): mask = or_mask(double[0])
+
+		# need special logic for short-m
+		a = set([or_mask(x) for x in double])
+		b = set([or_mask(x) for x in single])
+
+		if (0x2000 in a) and (0x0020 in a): tay = True
+		if (0x0000 in b) and (0x0020 in a): tay = True
+		if (0x0000 in b) and (0x2020 in a): tay = True
 
 
 	count = len(d)
@@ -59,16 +63,21 @@ def generate_asm(asm, d, level):
 		if short_m:
 			asm.emit("longa off", 0)
 			asm.emit("sep #$20", 2)
-		if level>0:
-			asm.emit("ldy #{}".format(level * 2), 3)
 
-		mask = load_char(asm, True, level, short_m, 0, mask)
+		if level==0:
+			asm.emit("lda (cp)", 2)
+		else:
+			asm.emit("ldy #{}".format(level * 2), 3)
+			asm.emit("lda (cp),y", 2)
+
+		if tay: asm.emit("tay", 1)
+
+		if flag_ci: mask = mask_char(asm, short_m, 0, mask)
 
 	for k in double:
 		dd = d[k]
 		l = asm.reserve_label()
-		if flag_ci:
-			mask = load_char(asm, False, level, short_m, mask, or_mask(k))
+		if flag_ci: mask = mask_char(asm, short_m, mask, or_mask(k))
 		asm.emit("cmp #${:04x}\t; '{}'".format(str_to_int(k), str_to_print(k)), 3)
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
@@ -83,8 +92,7 @@ def generate_asm(asm, d, level):
 	for k in single:
 		dd = d[k]
 		l = asm.reserve_label()
-		if flag_ci:
-			mask = load_char(asm, False, level, short_m, mask, or_mask(k))
+		if flag_ci: mask = mask_char(asm, short_m, mask, or_mask(k))
 		asm.emit("cmp #${:02x}\t; '{}'".format(str_to_int(k), str_to_print(k)), 2)
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
