@@ -11,7 +11,7 @@ class Block(object):
 		self.rts = False
 
 	def empty(self):
-		return self.size == 0 and self.bne == None
+		return len(self.instr) == 0 and self.bne == None
 
 class Assembler(object):
 	def __init__(self, name):
@@ -156,8 +156,8 @@ class Assembler(object):
 		txt = """
 			phb
 			tsc
-			tcd
 			phd
+			tcd
 			pei cp+1
 			plb
 			plb
