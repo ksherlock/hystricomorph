@@ -160,7 +160,8 @@ def read_data(f, name):
 		ln = ln + 1
 		line = line.strip()
 		if line == "" : continue
-		if line[0] == "#" : continue
+		if line.startswith("#"): continue
+		if line.startswith("//"): continue
 
 		m = re.match(r'^"([^"]*)"\s+(\d+|0x[A-Fa-f0-9]+)$', line)
 		if not m:
