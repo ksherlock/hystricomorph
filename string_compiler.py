@@ -49,7 +49,7 @@ def generate_asm(asm, d, level):
 	short_m = single and not double
 
 	mask = 0
-	tay = False
+	save_a = False
 	if flag_i:
 		single.sort(key = or_mask)
 		double.sort(key = or_mask)
@@ -60,9 +60,9 @@ def generate_asm(asm, d, level):
 		a = set([or_mask(x) for x in double])
 		b = set([or_mask(x) for x in single])
 
-		if (0x2000 in a) and (0x0020 in a): tay = True
-		if (0x0000 in b) and (0x0020 in a): tay = True
-		if (0x0000 in b) and (0x2020 in a): tay = True
+		if (0x2000 in a) and (0x0020 in a): save_a = True
+		if (0x0000 in b) and (0x0020 in a): save_a = True
+		if (0x0000 in b) and (0x2020 in a): save_a = True
 
 
 	count = len(d)
@@ -81,7 +81,7 @@ def generate_asm(asm, d, level):
 			asm.emit("ldy #{}".format(level * 2), 3)
 			asm.emit("lda (cp),y", 2)
 
-		if tay: asm.emit("tay", 1)
+		if save_a: asm.emit("tay", 1)
 
 		if flag_i: mask = mask_char(asm, short_m, 0, mask)
 
