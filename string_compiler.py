@@ -249,7 +249,7 @@ def init_maps():
 
 
 def main():
-	global flag_i, flag_l
+	global flag_i, flag_l, flag_E
 
 	init_maps()
 
