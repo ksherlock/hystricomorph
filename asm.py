@@ -9,6 +9,7 @@ class Block(object):
 		self.labels = []
 		self.instr = []
 		self.rts = False
+		self.mx = 0b11
 
 	def empty(self):
 		return len(self.instr) == 0 and self.bne == None
@@ -39,7 +40,12 @@ class Assembler(object):
 		self.new_block()
 
 	def new_block(self):
+		mx = 0b11
+		if self.b:
+			mx = self.b.mx
 		self.b = Block()
+		self.b.mx = mx
+
 		self.blocks.append(self.b)
 
 	def bne(self, l):
@@ -49,6 +55,26 @@ class Assembler(object):
 	def emit(self, op, size):
 		self.b.size = self.b.size + size
 		self.b.instr.append("\t" + op)
+
+	def mx_common(self, onoff, mask):
+		mx = oldmx = self.b.mx
+
+		if onoff: mx |= mask
+		else: mx &= ~mask
+
+		if mx == oldmx: return
+
+		if not self.b.empty():
+			self.new_block()
+
+		self.b.mx = mx
+
+
+	def longm(self, onoff):
+		self.mx_common(onoff, 0b10)
+
+	def longx(self, onoff):
+		self.mx_common(onoff, 0b01)
 
 	def merge_rts(self):
 		blocks = []
@@ -132,14 +158,31 @@ class Assembler(object):
 
 
 	def finish(self,io):
+		onoff = ("on", "off")
 		self.b = None
 		self.merge_rts()
 		self.merge_labels()
 		self.reify_branches()
 
 		self.header(io)
+
+		mx = 0b11
+		io.write("\tlongi on\n")
+		io.write("\tlonga on\n")
+
 		for b in self.blocks:
 			for l in b.labels: io.write(l + "\tanop\n")
+
+			# io.write(f"mx: {b.mx}\n")
+			mxdiff = mx ^ b.mx
+			if mxdiff:
+				if mxdiff & 0b01:
+					io.write("\tlongi " + onoff[mx & 0b01] + "\n")
+				if mxdiff & 0b10:
+					io.write("\tlonga " + onoff[(mx & 0b10) >> 1] + "\n")
+
+				mx = b.mx
+
 			for i in b.instr: io.write(i + "\n")
 		self.footer(io)
 
