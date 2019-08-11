@@ -162,7 +162,7 @@ def read_data(f, name):
 		if line == "" : continue
 		if line[0] == "#" : continue
 
-		m = re.match(r'^"([^"]*)"\s+(\d+)$', line)
+		m = re.match(r'^"([^"]*)"\s+(\d+|0x[A-Fa-f0-9]+)$', line)
 		if not m:
 			err = "{}:{}: Bad data: {}".format(name,ln,line)
 			raise Exception(err)
@@ -170,7 +170,12 @@ def read_data(f, name):
 		if flag_i:
 			k = k.lower()
 		k = decode_string(k)
-		v = int(m[2])
+
+		tmp = m[2]
+		base = 10
+		if tmp.startswith("0x"): base = 16
+		v = int(tmp, base)
+	
 		if flag_l:
 			if v > 255 or len(orig_k) > 255:
 				err = "{}:{} Value too large: {}".format(name, ln, v)
