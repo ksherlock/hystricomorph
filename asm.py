@@ -4,17 +4,33 @@ from time import asctime
 class Block(object):
 	def __init__(self):
 		self.size = 0
-		self.bne = None
-		self.bne_long = False
+		self.branch_target = None
+		self.branch_long = False
+		self.branch_type = None
+		self.branch_size = 0
 		self.labels = []
 		self.instr = []
 		self.rts = False
 		self.mx = 0b11
 
 	def empty(self):
-		return len(self.instr) == 0 and self.bne == None
+		return self.size + self.branch_size == 0
+
+
 
 class Assembler(object):
+
+	__inverted_branch = {
+		'bne': 'beq',
+		'beq': 'bne',
+		'bvc': 'bvs',
+		'bvs': 'bvc',
+		'bpl': 'bmi',
+		'bmi': 'bpl',
+		'bcc': 'bcs',
+		'bcs': 'bcc'
+	}
+
 	def __init__(self, name):
 		self.name = name
 		self.blocks = []
@@ -49,7 +65,9 @@ class Assembler(object):
 		self.blocks.append(self.b)
 
 	def bne(self, l):
-		self.b.bne = l
+		self.b.branch_type = 'bne'
+		self.b.branch_target = l
+		self.b.branch_size = 2
 		self.new_block()
 
 	def emit(self, op, size):
@@ -100,8 +118,8 @@ class Assembler(object):
 				b.labels = [first]
 
 		for b in self.blocks:
-			if b.bne:
-				b.bne = map[b.bne]
+			if b.branch_target:
+				b.branch_target = map[b.branch_target]
 
 	def reify_branches(self):
 		# in practice all branches are forward
@@ -113,8 +131,7 @@ class Assembler(object):
 			for l in b.labels:
 				map[l] = pc
 
-			pc = pc + b.size
-			if b.bne: pc = pc + 2 # optimist
+			pc = pc + b.size + b.branch_size
 
 		delta = True
 		while delta:
@@ -124,11 +141,11 @@ class Assembler(object):
 			for b in self.blocks:
 
 				pc = pc + b.size
-				l = b.bne
+				l = b.branch_target
 				if not l: continue
 
-				if b.bne_long:
-					pc = pc + 5
+				if b.branch_long:
+					pc = pc + b.branch_size
 					continue
 
 				target = map[l]
@@ -137,25 +154,35 @@ class Assembler(object):
 
 				if diff < -128 or diff > 127:
 					delta = True
-					b.bne_long = True
+					b.branch_long = True
+					if b.branch_type == 'bra':
+						b.branch_type = 'brl'
+						b.branch_size = 3
+						fudge = 1
+					else:
+						b.branch_size = 5
+						fudge = 3
 
 					for x in map:
 						if map[x] >= pc:
-							map[x] = map[x] + 3
+							map[x] = map[x] + fudge
 
 
 		for b in self.blocks:
 
-			l = b.bne
+			l = b.branch_target
 			if not l: continue
-			if b.bne_long:
-				b.instr.append("\tbeq *+5")
-				b.instr.append("\tbrl " + l)
-				b.size = b.size + 5
-			else:
-				b.instr.append("\tbne " + l)
-				b.size = b.size + 2
+			t = b.branch_type
 
+			if b.branch_long:
+				if b.branch_type not in ('bra', 'brl'):
+					t = self.__inverted_branch[t]
+					b.instr.append("\t{} *+5".format(t))
+				b.instr.append("\tbrl " + l)
+			else:
+				b.instr.append("\t{} {}".format(t, l))
+
+			b.size = b.size + b.branch_size
 
 	def finish(self,io):
 		onoff = ("on", "off")
