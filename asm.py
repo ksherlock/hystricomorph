@@ -33,9 +33,11 @@ class Assembler(object):
 
 	def __init__(self, name):
 		self.name = name
+		self.mx = 0b11
 		self.blocks = []
 		self.b = None
 		self.label = 0
+
 		self.new_block()
 
 
@@ -56,11 +58,8 @@ class Assembler(object):
 		self.new_block()
 
 	def new_block(self):
-		mx = 0b11
-		if self.b:
-			mx = self.b.mx
 		self.b = Block()
-		self.b.mx = mx
+		self.b.mx = self.mx
 
 		self.blocks.append(self.b)
 
@@ -75,24 +74,35 @@ class Assembler(object):
 		self.b.instr.append("\t" + op)
 
 	def mx_common(self, onoff, mask):
-		mx = oldmx = self.b.mx
+
+		mx = self.mx
 
 		if onoff: mx |= mask
 		else: mx &= ~mask
 
-		if mx == oldmx: return
+		if mx == self.mx: return
 
 		if not self.b.empty():
 			self.new_block()
 
 		self.b.mx = mx
+		self.mx = mx
 
+	@property
+	def longm(self):
+		return bool(self.mx & 0b10)
 
-	def longm(self, onoff):
-		self.mx_common(onoff, 0b10)
+	@longm.setter
+	def longm(self, value):
+		self.mx_common(value, 0b10)
 
-	def longx(self, onoff):
-		self.mx_common(onoff, 0b01)
+	@property
+	def longx(self):
+		return bool(self.mx & 0b01)
+
+	@longx.setter
+	def longx(self, value):
+		self.mx_common(value, 0b01)
 
 	def merge_rts(self):
 		blocks = []
@@ -214,6 +224,7 @@ class Assembler(object):
 		self.footer(io)
 
 		self.blocks = []
+		self.mx = 0b11
 		self.new_block()
 
 	def header(self, io):
