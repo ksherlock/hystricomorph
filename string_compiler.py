@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import getopt
 import sys
 import re
@@ -204,7 +206,7 @@ def read_cpp(infile):
 
 	x = subprocess.run(args, stdout=subprocess.PIPE, encoding='ascii')
 	if x.returncode:
-		sys.exit(s.returncode)
+		sys.exit(x.returncode)
 
 	lines = x.stdout.split("\n")
 	return read_data(lines, "<cpp-stdin>")
