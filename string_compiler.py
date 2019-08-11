@@ -2,6 +2,7 @@ import getopt
 import sys
 import re
 from functools import reduce
+import subprocess
 
 from asm import Assembler
 
@@ -9,6 +10,7 @@ flag_i = False
 flag_l = False
 flag_v = False
 flag_o = None
+flag_E = False
 
 
 def str_to_int(cc):
@@ -190,6 +192,17 @@ def read_file(path):
 	with open(path) as f:
 		return read_data(f, path)
 
+def read_cpp(infile):
+	args = ["cpp"]
+	if infile: args.append(infile)
+
+	x = subprocess.run(args, stdout=subprocess.PIPE, encoding='ascii')
+	if x.returncode:
+		sys.exit(s.returncode)
+
+	lines = x.stdout.split("\n")
+	return read_data(lines, "<cpp-stdin>")
+
 
 def init_maps():
 
@@ -234,7 +247,7 @@ def main():
 
 
 	argv = sys.argv[1:]
-	opts, args = getopt.getopt(argv, "ivo:le")
+	opts, args = getopt.getopt(argv, "ivo:leE")
 
 	# flags = {}
 	# for k, v in opts: flags[k] = v
@@ -247,6 +260,7 @@ def main():
 		elif k == '-o': flag_o = v
 		elif k == '-v': flag_v = True
 		elif k == '-l': flag_l = True
+		elif k == '-E': flag_E = True
 		else:
 			usage()
 
@@ -256,10 +270,19 @@ def main():
 	name = args[0]
 	data = {}
 
-	if len(args) == 1 or args[1] == "-":
-		data = read_stdin()
-	else:
+	if len(args) == 2 and args[1] == "-":
+		args.pop()
+
+	if flag_E:
+		infile = None
+		if len(args) == 2:
+			infile = args.pop()
+		data = read_cpp(infile)
+
+	elif len(args) == 2:
 		data = read_file(args[1])
+	else:
+		data = read_stdin()
 
 	process(data, name)
 
