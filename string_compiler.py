@@ -33,8 +33,12 @@ def mask_char(asm, short_m, old, new):
 	if old & ~new: 
 		asm.emit("tya", 1)
 
-	if short_m: asm.emit("ora #${:02x}".format(new), 2)
-	else: asm.emit("ora #${:04x}".format(new), 3)
+	if short_m:
+		asm.emit("longa off", 0)
+		asm.emit("ora #${:02x}".format(new), 2)
+		asm.emit("longa on", 0)
+	else:
+		asm.emit("ora #${:04x}".format(new), 3)
 	return new
 
 
@@ -67,7 +71,6 @@ def generate_asm(asm, d, level):
 
 	if count>0:
 		if short_m:
-			asm.emit("longa off", 0)
 			asm.emit("sep #$20", 2)
 
 		if level==0:
@@ -91,7 +94,6 @@ def generate_asm(asm, d, level):
 		asm.emit_label(l)
 
 	if single and double:
-		asm.emit("longa off", 0)
 		asm.emit("sep #$20", 2)
 		short_m = True
 		mask = mask & 0xff
@@ -101,13 +103,16 @@ def generate_asm(asm, d, level):
 		l = asm.reserve_label()
 		if flag_i: mask = mask_char(asm, short_m, mask, or_mask(k))
 		v = str_to_int(k)
+		asm.emit("longa off", 0)
 		asm.emit("cmp #${:02x}\t; '{}'".format(v, encode_string(k)), 2)
+		asm.emit("longa on", 0)
+
 		asm.bne(l)
 		generate_asm(asm, dd, level+1)
 		asm.emit_label(l)
 
-	if short_m:
-		asm.emit("longa on", 0)
+	# if short_m:
+		# asm.emit("longa on", 0)
 	if "" in d: 
 		d = d[""]
 		asm.emit("ldx #{}\t; '{}'".format(d["__value__"], d["__key__"]), 3)
