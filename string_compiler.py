@@ -156,7 +156,13 @@ def encode_string(s):
 
 
 def usage(ex=1):
-	print("Usage: string_compiler [-i] name [file]")
+	print("Usage: string_compiler [-cilvE] [-o output_file] function_name [input_file]")
+	print("  -c                add implicit 0-terminator to strings")
+	print("  -i                case insensitive")
+	print("  -l                include string length in lsb of return value")
+	print("  -v                be verbose")
+	print("  -E                use c pre-processor")
+	print("  -o output_file    specify output file")
 	sys.exit(ex)
 
 
