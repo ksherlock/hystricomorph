@@ -11,7 +11,7 @@ Generates code to match an input string against one or more target strings.
 
 ## Usage
 
-    python3 string_compiler.py [-ilvE] [-o outfile_file] function_name [input_file]
+    python3 hystricomorph.py [-ilvE] [-o outfile_file] function_name [input_file]
 
     -i case insensitive comparison
     -E run input file through c pre-processor
