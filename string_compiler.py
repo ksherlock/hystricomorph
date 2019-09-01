@@ -172,7 +172,7 @@ def read_data(f, name):
 		if line.startswith("#"): continue
 		if line.startswith("//"): continue
 
-		m = re.match(r'^"([^"]*)"\s+(\d+|0x[A-Fa-f0-9]+)$', line)
+		m = re.match(r'^"([^"]*)"\s*:\s*(\d+|0x[A-Fa-f0-9]+)$', line)
 		if not m:
 			err = "{}:{}: Bad data: {}".format(name,ln,line)
 			raise Exception(err)
