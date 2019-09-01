@@ -13,6 +13,7 @@ flag_l = False
 flag_v = False
 flag_o = None
 flag_E = False
+flag_c = False
 
 
 def str_to_int(cc):
@@ -160,7 +161,7 @@ def usage(ex=1):
 
 
 def read_data(f, name):
-	global flag_i, flag_l
+	global flag_i, flag_l, flag_c
 
 	data = {}
 	ln = 0
@@ -176,20 +177,25 @@ def read_data(f, name):
 			err = "{}:{}: Bad data: {}".format(name,ln,line)
 			raise Exception(err)
 		k = orig_k = m[1]
-		if flag_i:
-			k = k.lower()
-		k = decode_string(k)
 
+		k = decode_string(k)
+		if flag_i: k = k.lower()
+		len_k = len(k)
+		if flag_c: k = k + "\x00"
 		tmp = m[2]
 		base = 10
 		if tmp.startswith("0x"): base = 16
 		v = int(tmp, base)
 	
+		if v > 65535:
+			err = "{}:{} Value too large: {}".format(name, ln, v)
+			raise Exception(err)	
+						
 		if flag_l:
-			if v > 255 or len(orig_k) > 255:
+			if v > 255 or len_k > 255:
 				err = "{}:{} Value too large: {}".format(name, ln, v)
 				raise Exception(err)
-			v = (v << 8) + len(orig_k) 
+			v = (v << 8) + len_k 
 
 		if k in data:
 			err = "{}:{}: Duplicate string: {}".format(name,ln,orig_k)
@@ -255,13 +261,13 @@ def init_maps():
 
 
 def main():
-	global flag_i, flag_l, flag_E
+	global flag_i, flag_l, flag_E, flag_c
 
 	init_maps()
 
 
 	argv = sys.argv[1:]
-	opts, args = getopt.getopt(argv, "ivo:leE")
+	opts, args = getopt.getopt(argv, "ivo:leEc")
 
 	# flags = {}
 	# for k, v in opts: flags[k] = v
@@ -275,6 +281,7 @@ def main():
 		elif k == '-v': flag_v = True
 		elif k == '-l': flag_l = True
 		elif k == '-E': flag_E = True
+		elif k == '-c': flag_c = True
 		else:
 			usage()
 
