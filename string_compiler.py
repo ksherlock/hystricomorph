@@ -165,6 +165,7 @@ def read_data(f, name):
 
 	data = {}
 	ln = 0
+	errors = 0
 	for line in f:
 		ln = ln + 1
 		line = line.strip()
@@ -172,37 +173,45 @@ def read_data(f, name):
 		if line.startswith("#"): continue
 		if line.startswith("//"): continue
 
-		m = re.match(r'^"([^"]*)"\s*:\s*(\d+|0x[A-Fa-f0-9]+)$', line)
-		if not m:
-			err = "{}:{}: Bad data: {}".format(name,ln,line)
-			raise Exception(err)
-		k = orig_k = m[1]
+		try:
 
-		k = decode_string(k)
-		if flag_i: k = k.lower()
-		len_k = len(k)
-		if flag_c: k = k + "\x00"
-		tmp = m[2]
-		base = 10
-		if tmp.startswith("0x"): base = 16
-		v = int(tmp, base)
-	
-		if v > 65535:
-			err = "{}:{} Value too large: {}".format(name, ln, v)
-			raise Exception(err)	
-						
-		if flag_l:
-			if v > 255 or len_k > 255:
-				err = "{}:{} Value too large: {}".format(name, ln, v)
+			m = re.match(r'^"([^"]*)"\s*:\s*(\d+|0x[A-Fa-f0-9]+)$', line)
+			if not m:
+				err = "Syntax error: {}".format(line)
 				raise Exception(err)
-			v = (v << 8) + len_k 
+			k = orig_k = m[1]
 
-		if k in data:
-			err = "{}:{}: Duplicate string: {}".format(name,ln,orig_k)
-			raise Exception(err)
+			k = decode_string(k)
+			if flag_i: k = k.lower()
+			len_k = len(k)
+			if flag_c: k = k + "\x00"
+			tmp = m[2]
+			base = 10
+			if tmp.startswith("0x"): base = 16
+			v = int(tmp, base)
+		
+			if v > 65535:
+				err = "Value too large: {}".format(v)
+				raise Exception(err)	
+							
+			if flag_l:
+				if v > 255 or len_k > 255:
+					err = "Value too large: {}".format(v)
+					raise Exception(err)
+				v = (v << 8) + len_k 
 
-		data[k] = v
+			if k in data:
+				err = "Duplicate string: {}".format(orig_k)
+				raise Exception(err)
 
+			data[k] = v
+
+		except Exception as e:
+			errors = errors + 1
+			print("{}:{}".format(name, ln), e, file=sys.stderr, flush=True)
+
+
+	if errors: sys.exit(1)
 	return data
 
 def read_stdin():
@@ -309,8 +318,4 @@ def main():
 
 	sys.exit(0)
 
-try:
-	main()
-except Exception as ex:
-	print("string16: ", ex, file=sys.stderr, flush=True)
-	sys.exit(1)
+main()
