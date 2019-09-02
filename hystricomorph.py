@@ -3,6 +3,9 @@
 import getopt
 import sys
 import re
+import os
+import signal
+
 from functools import reduce
 import subprocess
 
@@ -208,7 +211,7 @@ def read_data(f, name):
 			print("{}:{}".format(name, ln), e, file=sys.stderr, flush=True)
 
 
-	if errors: sys.exit(1)
+	if errors: sys.exit(os.EX_DATAERR)
 	return data
 
 def read_stdin():
@@ -264,8 +267,13 @@ def init_maps():
 	encode_map[chr(9)] = '\\t'
 	encode_map[chr(11)] = '\\v'
 
+def exit_code_for(e):
+	t = type(e)
+	if t == FileNotFoundError: return os.EX_NOINPUT
+	if t == PermissionError: return os.EX_NOINPUT
+	return 1
 
-def usage(ex=1):
+def usage(ex):
 	print("Usage: hystricomorph [-cilvE] [-o output_file] function_name [input_file]")
 	print("  -c                add implicit 0-terminator to strings")
 	print("  -i                case insensitive")
@@ -282,20 +290,21 @@ def main():
 
 
 	argv = sys.argv[1:]
-	opts, args = getopt.getopt(argv, "ivo:leEc")
+	opts, args = getopt.getopt(argv, "hivo:leEc")
 
 	for k, v in opts:
-		if k == '-i': flag_i = True
+		if k == '-E': flag_E = True
+		elif k == '-c': flag_c = True
+		elif k == '-h': usage(os.EX_OK)
+		elif k == '-i': flag_i = True
+		elif k == '-l': flag_l = True
 		elif k == '-o': flag_o = v
 		elif k == '-v': flag_v = True
-		elif k == '-l': flag_l = True
-		elif k == '-E': flag_E = True
-		elif k == '-c': flag_c = True
 		else:
-			usage()
+			usage(os.EX_USAGE)
 
 	if len(args) < 1 or len(args) > 2:
-		usage()
+		usage(os.EX_USAGE)
 
 	name = args[0]
 	data = {}
@@ -316,6 +325,13 @@ def main():
 
 	process(data, name)
 
-	sys.exit(0)
+	sys.exit(os.EX_OK)
 
-main()
+try:
+	# prevent ^C from generating a KeyboardInterrupt signal (and backtrace)
+	signal.signal(signal.SIGINT, signal.SIG_DFL)
+	main()
+except Exception as e:
+	print("hystricomorph:", e, file=sys.stderr, flush=True)
+	sys.exit(exit_code_for(e))
+
