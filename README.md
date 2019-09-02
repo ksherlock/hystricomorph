@@ -39,13 +39,15 @@ This will generate a function (`int match(const char *)`) which is essentially:
 
 ```
 int match(const char *cp) {
-	if (!strncasecmp(cp, "abcd", 4)) return (2 << 8) | 4;
-	if (!strncasecmp(cp, "abc", 3)) return (1 << 8) | 3;
+	if (!strcasecmp(cp, "abcd")) return (2 << 8) | 4;
+	if (!strcasecmp(cp, "abc")) return (1 << 8) | 3;
 	return 0;
 }
 ```
 
-(without the `-c` flag it would be more akin to `memcmp` than `strcmp`)
+(without the `-c` flag it would be more akin to `memcmp` than `strcmp`.
+Actual matching logic is based on the character count not a terminal character
+so embedded `0`s match correctly.)
 
 But hopefully more efficient...
 
