@@ -39,11 +39,13 @@ This will generate a function (`int match(const char *)`) which is essentially:
 
 ```
 int match(const char *cp) {
-	if (!strncasecmp(cp, "abcd\x00", 5)) return (2 << 8) | 4;
-	if (!strncasecmp(cp, "abc\x00", 4)) return (1 << 8) | 3;
+	if (!strncasecmp(cp, "abcd", 4)) return (2 << 8) | 4;
+	if (!strncasecmp(cp, "abc", 3)) return (1 << 8) | 3;
 	return 0;
 }
 ```
+
+(without the `-c` flag it would be more akin to `memcmp` than `strcmp`)
 
 But hopefully more efficient...
 
