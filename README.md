@@ -26,3 +26,87 @@ Generates code to match an input string against one or more target strings.
 * value may be base 10 or base 16 (`0x` prefix) 16-bit integer.
 * string may include standard C character escapes
 * no octal.
+
+## output file
+
+```
+python3 hystricomorph.py -c -i -l match
+"ABC" : 1
+"ABCD" : 2
+```
+
+This will generate a function (`int match(const char *)`) which is essentially:
+
+```
+int match(const char *cp) {
+	if (!strncasecmp(cp, "abcd\x00", 5)) return (2 << 8) | 4;
+	if (!strncasecmp(cp, "abc\x00", 4)) return (1 << 8) | 3;
+	return 0;
+}
+```
+
+But hopefully more efficient...
+
+```
+* generated Sun Sep  1 22:34:34 2019
+
+	case on
+
+dummy	START
+	END
+
+match	START
+
+cp	equ 5
+
+	phb
+	tsc
+	phd
+	tcd
+	pei cp+1
+	plb
+	plb
+	jsr _action
+	rep #$20
+	lda 1
+	sta 5
+	lda 3
+	sta 7
+	pld
+	pla
+	pla
+	txa
+	plb
+	rtl
+
+_action	anop
+	ldx #0
+
+	longi on
+	longa on
+	lda (cp)
+	ora #$2020
+	cmp #$6261	; 'ab'
+	bne _4
+	ldy #2
+	lda (cp),y
+	ora #$0020
+	cmp #$0063	; 'c\x00'
+	bne _2
+	ldx #259	; 'abc\x00'
+	rts
+_2	anop
+	ora #$2020
+	cmp #$6463	; 'cd'
+	bne _4
+	longa off
+	sep #$20
+	ldy #4
+	lda (cp),y
+	cmp #$00	; '\x00'
+	bne _4
+	ldx #516	; 'abcd\x00'
+_4	anop
+	rts
+	END
+```
