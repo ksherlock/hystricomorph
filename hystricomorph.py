@@ -14,7 +14,6 @@ from asm import Assembler
 flag_i = False
 flag_l = False
 flag_v = False
-flag_o = None
 flag_E = False
 flag_c = False
 
@@ -125,7 +124,7 @@ def generate_asm(asm, d, level):
 
 
 
-def process(data, name):
+def process(data, name, outfd):
 	tree = {}
 	for k in data.keys():
 
@@ -145,7 +144,7 @@ def process(data, name):
 	# print(tree);
 	asm = Assembler(name)
 	generate_asm(asm, tree, 0)
-	asm.finish(sys.stdout)
+	asm.finish(outfd)
 
 def decode_string(s):
 	global decode_map
@@ -284,7 +283,9 @@ def usage(ex):
 	sys.exit(ex)
 
 def main():
-	global flag_i, flag_l, flag_E, flag_c
+	global flag_E, flag_c, flag_i, flag_l, flag_v 
+
+	outfile = None
 
 	init_maps()
 
@@ -298,7 +299,7 @@ def main():
 		elif k == '-h': usage(os.EX_OK)
 		elif k == '-i': flag_i = True
 		elif k == '-l': flag_l = True
-		elif k == '-o': flag_o = v
+		elif k == '-o': outfile = v
 		elif k == '-v': flag_v = True
 		else:
 			usage(os.EX_USAGE)
@@ -323,7 +324,10 @@ def main():
 	else:
 		data = read_stdin()
 
-	process(data, name)
+	outfd = sys.stdout
+	if outfile: outfd = open(outfile, "w")
+	process(data, name, outfd)
+	if outfile: outfd.close()
 
 	sys.exit(os.EX_OK)
 
