@@ -325,6 +325,7 @@ def main():
 		data = read_stdin()
 
 	outfd = sys.stdout
+	if outfile == "-": outfile = None
 	if outfile: outfd = open(outfile, "w")
 	process(data, name, outfd)
 	if outfile: outfd.close()
